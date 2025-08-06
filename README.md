@@ -12,8 +12,6 @@ A stunning, fully responsive portfolio website with modern animations and smooth
 - ⚡ Fast loading and optimized
 - 🎯 Interactive elements
 - 📊 Animated counters
-- 🎨 ` (uppercase)
-- You need to use proper heredoc syntax
 
 **Correct syntax:**
 # content here
