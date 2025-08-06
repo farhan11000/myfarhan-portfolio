@@ -1,0 +1,32 @@
+{
+  "name": "myfarhan-portfolio",
+  "version": "1.0.0",
+  "description": "A myfarhan portfolio website with animations and transitions",
+  "main": "index.html",
+  "scripts": {
+    "start": "python -m http.server 8000",
+    "dev": "live-server .",
+    "build": "echo 'Build complete'",
+    "deploy": "echo 'Ready for deployment'"
+  },
+  "keywords": [
+    "portfolio",
+    "website",
+    "myfarhan",
+    "animations"
+  ],
+  "author": "Farhan Ali",
+  "license": "MIT",
+  "dependencies": {
+    "body-parser": "^2.2.0",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.1",
+    "express": "^5.1.0",
+    "helmet": "^8.1.0",
+    "morgan": "^1.10.1",
+    "nodemailer": "^7.0.5"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  }
+}
