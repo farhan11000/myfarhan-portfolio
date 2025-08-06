@@ -2,7 +2,7 @@
 let isLoading = true;
 
 // API Configuration
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = 'myfarhan-portfolio-production.up.railway.app';
 
 // Loading screen
 window.addEventListener('load', function() {
