@@ -1,8 +1,8 @@
 // Global variables
 let isLoading = true;
 
-// API Configuration
-const API_BASE_URL = 'myfarhan-portfolio-production.up.railway.app';
+// API Configuration - FIXED: Added https:// protocol
+const API_BASE_URL = 'https://myfarhan-portfolio-production.up.railway.app';
 
 // Loading screen
 window.addEventListener('load', function() {
@@ -328,7 +328,7 @@ function observeElements() {
     });
 }
 
-// Enhanced Contact form handling with backend integration
+// Enhanced Contact form handling with backend integration - FIXED
 const contactForm = document.getElementById('contact-form');
 
 contactForm.addEventListener('submit', async function(e) {
@@ -363,8 +363,8 @@ contactForm.addEventListener('submit', async function(e) {
     submitBtn.disabled = true;
     
     try {
-        // Send to backend
-        const response = await makeAPIRequest('/contact/send', {
+        // FIXED: Correct endpoint path
+        const response = await makeAPIRequest('/api/contact/send', {
             method: 'POST',
             body: JSON.stringify(contactData)
         });
@@ -379,7 +379,7 @@ contactForm.addEventListener('submit', async function(e) {
                 subject: contactData.subject
             });
         } else {
-            throw new Error(response.message || 'Failed to send message');
+            throw new Error(response.error || 'Failed to send message');
         }
         
     } catch (error) {
