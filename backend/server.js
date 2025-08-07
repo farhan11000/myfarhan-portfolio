@@ -29,6 +29,7 @@ const limiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: 100, // limit each IP to 100 requests per windowMs
     message: {
+        success: false,
         error: 'Too many requests from this IP, please try again later.'
     }
 });
@@ -37,24 +38,31 @@ const contactLimiter = rateLimit({
     windowMs: 60 * 60 * 1000, // 1 hour
     max: 5, // limit each IP to 5 contact requests per hour
     message: {
+        success: false,
         error: 'Too many contact requests from this IP, please try again later.'
     }
 });
 
 app.use(limiter);
 
-// CORS configuration
+// CORS configuration - FIXED: Added your Netlify URL
 const corsOptions = {
-  origin: process.env.ALLOWED_ORIGINS?.split(',') || [
+  origin: [
+    'https://farhan-peerzada-portfolio.netlify.app',
     'http://localhost:3000',
     'http://localhost:5000',
     'http://127.0.0.1:5500'
   ],
   credentials: true,
-  optionsSuccessStatus: 200
+  optionsSuccessStatus: 200,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With']
 };
 
 app.use(cors(corsOptions));
+
+// Handle preflight requests
+app.options('*', cors(corsOptions));
 
 // Compression middleware
 app.use(compression());
@@ -87,16 +95,18 @@ const createTransporter = () => {
     });
 };
 
-// Contact route
+// Contact route - FIXED: Proper error responses
 app.post('/api/contact/send', contactLimiter, async (req, res) => {
     try {
-        const { name, email, subject, message } = req.body;
+        const { name, email, subject, message, phone, company } = req.body;
+
+        console.log('Contact form submission received:', { name, email, subject });
 
         // Basic validation
         if (!name || !email || !subject || !message) {
             return res.status(400).json({
                 success: false,
-                error: 'All fields are required'
+                error: 'All required fields (name, email, subject, message) must be filled'
             });
         }
 
@@ -124,6 +134,8 @@ app.post('/api/contact/send', contactLimiter, async (req, res) => {
                     <div style="background-color: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0;">
                         <p><strong>Name:</strong> ${name}</p>
                         <p><strong>Email:</strong> ${email}</p>
+                        <p><strong>Phone:</strong> ${phone || 'Not provided'}</p>
+                        <p><strong>Company:</strong> ${company || 'Not provided'}</p>
                         <p><strong>Subject:</strong> ${subject}</p>
                         <p><strong>Message:</strong></p>
                         <div style="background-color: white; padding: 15px; border-left: 4px solid #007bff; margin-top: 10px;">
@@ -183,6 +195,146 @@ app.post('/api/contact/send', contactLimiter, async (req, res) => {
     }
 });
 
+// Newsletter subscription route (optional)
+app.post('/api/contact/subscribe', contactLimiter, async (req, res) => {
+    try {
+        const { email } = req.body;
+
+        if (!email) {
+            return res.status(400).json({
+                success: false,
+                error: 'Email is required'
+            });
+        }
+
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            return res.status(400).json({
+                success: false,
+                error: 'Invalid email format'
+            });
+        }
+
+        const transporter = createTransporter();
+
+        // Notification email
+        const subscriptionNotification = {
+            from: process.env.EMAIL_USER,
+            to: process.env.CONTACT_EMAIL || process.env.EMAIL_USER,
+            subject: 'New Newsletter Subscription',
+            html: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <h2 style="color: #333;">New Newsletter Subscription</h2>
+                    <p><strong>Email:</strong> ${email}</p>
+                    <p><strong>Date:</strong> ${new Date().toLocaleString()}</p>
+                </div>
+            `
+        };
+
+        // Welcome email to subscriber
+        const welcomeEmail = {
+            from: process.env.EMAIL_USER,
+            to: email,
+            subject: 'Welcome to my Newsletter - Farhan Ali Peerzada',
+            html: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <h2 style="color: #333;">Welcome to my Newsletter!</h2>
+                    <p>Thank you for subscribing to my newsletter. You'll receive updates about:</p>
+                    <ul>
+                        <li>New projects and developments</li>
+                        <li>Technical articles and insights</li>
+                        <li>Industry news and trends</li>
+                        <li>Career updates and opportunities</li>
+                    </ul>
+                    <p>Stay tuned for exciting content!</p>
+                    <p>Best regards,<br><strong>Farhan Ali Peerzada</strong></p>
+                </div>
+            `
+        };
+
+        await transporter.sendMail(subscriptionNotification);
+        await transporter.sendMail(welcomeEmail);
+
+        console.log(`Newsletter subscription: ${email}`);
+
+        res.status(200).json({
+            success: true,
+            message: 'Successfully subscribed to newsletter!'
+        });
+
+    } catch (error) {
+        console.error('Newsletter subscription error:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to subscribe. Please try again later.'
+        });
+    }
+});
+
+// Portfolio data route (optional - for dynamic content)
+app.get('/api/portfolio/data', (req, res) => {
+    try {
+        const portfolioData = {
+            success: true,
+            data: {
+                personal: {
+                    name: 'Farhan Ali Peerzada',
+                    email: 'farhan.peerzadaa@gmail.com',
+                    title: 'Data Analyst & Software Engineer'
+                },
+                social: {
+                    github: 'https://github.com/yourprofile',
+                    linkedin: 'https://linkedin.com/in/yourprofile',
+                    twitter: 'https://twitter.com/yourprofile',
+                    email: 'mailto:farhan.peerzadaa@gmail.com'
+                },
+                stats: {
+                    projects: 15,
+                    experience: 4,
+                    technologies: 8,
+                    clients: 10
+                }
+            }
+        };
+
+        res.status(200).json(portfolioData);
+    } catch (error) {
+        console.error('Portfolio data error:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to load portfolio data'
+        });
+    }
+});
+
+// Analytics route (optional - for tracking)
+app.post('/api/portfolio/analytics', (req, res) => {
+    try {
+        const { event, data, timestamp, page } = req.body;
+        
+        // Log analytics data (you can store this in a database later)
+        console.log('Analytics Event:', {
+            event,
+            data,
+            timestamp,
+            page,
+            ip: req.ip,
+            userAgent: req.get('User-Agent')
+        });
+
+        res.status(200).json({
+            success: true,
+            message: 'Analytics data recorded'
+        });
+    } catch (error) {
+        console.error('Analytics error:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to record analytics'
+        });
+    }
+});
+
 // Root route
 app.get('/', (req, res) => {
     res.json({
@@ -190,9 +342,15 @@ app.get('/', (req, res) => {
         version: '1.0.0',
         endpoints: {
             contact: '/api/contact/send',
+            subscribe: '/api/contact/subscribe',
+            portfolio: '/api/portfolio/data',
+            analytics: '/api/portfolio/analytics',
             health: '/health'
         },
-        status: 'Running successfully! 🚀'
+        status: 'Running successfully! 🚀',
+        cors: {
+            allowedOrigins: corsOptions.origin
+        }
     });
 });
 
@@ -200,7 +358,14 @@ app.get('/', (req, res) => {
 app.use('*', (req, res) => {
     res.status(404).json({
         success: false,
-        error: 'Route not found'
+        error: `Route ${req.originalUrl} not found`,
+        availableRoutes: [
+            '/api/contact/send',
+            '/api/contact/subscribe',
+            '/api/portfolio/data',
+            '/api/portfolio/analytics',
+            '/health'
+        ]
     });
 });
 
@@ -209,7 +374,8 @@ app.use((err, req, res, next) => {
     console.error('Unhandled error:', err);
     res.status(500).json({
         success: false,
-        error: 'Internal server error'
+        error: 'Internal server error',
+        ...(process.env.NODE_ENV === 'development' && { details: err.message })
     });
 });
 
@@ -228,8 +394,9 @@ process.on('SIGINT', () => {
 app.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT}`);
     console.log(`📱 Environment: ${process.env.NODE_ENV || 'development'}`);
-    console.log(`🔗 Health check: http://localhost:${PORT}/health`);
-    console.log(`📧 Contact endpoint: http://localhost:${PORT}/api/contact/send`);
+    console.log(`🔗 Health check: https://myfarhan-portfolio-production.up.railway.app/health`);
+    console.log(`📧 Contact endpoint: https://myfarhan-portfolio-production.up.railway.app/api/contact/send`);
+    console.log(`🌐 CORS enabled for: ${corsOptions.origin.join(', ')}`);
 });
 
 module.exports = app;
